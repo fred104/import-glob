@@ -1,6 +1,7 @@
 var glob = require("glob");
 var path = require("path");
 var fs = require('fs');
+var loaderUtils = require('loader-utils');
 
 function walkUpToFindNodeModulesPath(context) {
   var tempPath = path.resolve(context, 'node_modules');
@@ -30,12 +31,23 @@ module.exports = function(source) {
   var resourceDir = path.dirname(this.resourcePath);
 
   var nodeModulesPath = walkUpToFindNodeModulesPath(resourceDir);
-
+  
+  var alias = loaderUtils.getOptions(this).alias
+  
   function replacer(match, fromStatement, obj, quote, filename) {
     var modules = [];
     var withModules = false;
 
     if (!filename.match(/\*/)) return match;
+    
+    if(alias) {	
+			Object.entries(alias).some(([alias, repl]) => {
+				if(filename.startsWith(alias)) {
+					filename = filename.replace(alias, repl);
+					return true;
+				}	
+			})
+		}
 
     var globRelativePath = filename.match(/!?([^!]*)$/)[1];
     var prefix = filename.replace(globRelativePath, '');
